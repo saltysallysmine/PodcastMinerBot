@@ -26,7 +26,7 @@ class Podcast:
 
     def _set_duration(self, duration: str):
         qw = [int(el) for el in duration.split(':')]
-        self.duration = 3600 * qw[0] + 60 * qw[1] + qw[0]
+        self.duration = 3600 * qw[0] + 60 * qw[1] + qw[2]
 
     def make(self):
         video = pafy.new(self.video_id)
@@ -59,7 +59,7 @@ def send_podcast(update, context):
     duration = podcast.duration
 
     # print("author name:", author_name)
-
+    print(duration)
     with open(audio_file_path, 'rb') as audio_file:
         update.message.reply_audio(audio_file, performer=author_name,
                                    title=title, duration=duration)
