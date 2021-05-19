@@ -54,8 +54,10 @@ class Podcast:
 def download_podcasts_cleaning():
     podcasts_size = os.path.getsize(os.getcwd() + '/download_podcasts')
     max_podcasts_size = 40960  # 40MiB
+
     if podcasts_size > max_podcasts_size:
         path_base = 'download_podcasts/'
+
         for filename in os.listdir('download_podcasts'):
             os.remove(path_base + filename)
 
@@ -70,7 +72,11 @@ def send_podcast(update, context):
         podcast.make()
         logging.info(f'make podcast with id {podcast.video_id}')
     except Exception as e:
+        update.message.reply_text(
+            'Something go wrong. Maybe your link or video id is incorrect'
+        )
         logging.error(f'can`t make podcast: {e}')
+        return
 
     audio_file_path = podcast.audio_file_path
     # author_name = podcast.author_name
