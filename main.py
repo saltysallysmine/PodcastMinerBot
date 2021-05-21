@@ -43,17 +43,22 @@ class Podcast:
         self.title = video.title
         self._set_duration(video.duration)
 
-        self.audio_file_path = \
-            f'download_podcasts/{self.title} - {self.author_name}.mp3'
+        # self.audio_file_path == 'download_podcasts/title - name.mp3'
+        self.audio_file_path = 'download_podcasts/'
+        self.audio_file_path += self.video_id
+        self.audio_file_path += '.mp3'
 
+        # download podcast
         stream = video.getbestaudio()
         filename = stream.download(filepath=self.audio_file_path)
 
 
 # clean download_podcasts if it`s too big
 def download_podcasts_cleaning():
-    podcasts_size = os.path.getsize(os.getcwd() + '/download_podcasts')
-    max_podcasts_size = 40960  # 40MiB
+    path_base = os.getcwd() + '/download_podcasts'
+    files_sizes = [os.path.getsize(path_base + '/' + f) for f in os.listdir(path_base)]
+    podcasts_size = sum(files_sizes)
+    max_podcasts_size = 52428800  # 50MiB
 
     if podcasts_size > max_podcasts_size:
         path_base = 'download_podcasts/'
