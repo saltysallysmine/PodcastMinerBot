@@ -18,9 +18,7 @@ logging.info('get bot token from env')
 class Podcast:
     def __init__(self, url: str):
         self.url = url
-
         self.video_id = None
-        self._set_video_id(url)
 
         self.author_name = None
         self.title = None
@@ -28,29 +26,26 @@ class Podcast:
 
         self.audio_file_path = None
 
-    def _set_video_id(self, url):
-        # https://www.youtube.com/watch?v=Zf2jljuUpMQ
-        self.video_id = url[-11:]
-
     def _set_duration(self, duration: str):
         qw = [int(el) for el in duration.split(':')]
         self.duration = 3600 * qw[0] + 60 * qw[1] + qw[2]
 
     def make(self):
-        video = pafy.new(self.video_id)
+        video = pafy.new(self.url)
 
-        self.author_name = video.username
+        self.author_name = video.author
         self.title = video.title
+        self.video_id = video.videoid
         self._set_duration(video.duration)
 
-        # self.audio_file_path == 'download_podcasts/title - name.mp3'
+        # self.audio_file_path will be like 'download_podcasts/video_id.mp3'
         self.audio_file_path = 'download_podcasts/'
         self.audio_file_path += self.video_id
         self.audio_file_path += '.mp3'
 
         # download podcast
         stream = video.getbestaudio()
-        filename = stream.download(filepath=self.audio_file_path)
+        stream.download(filepath=self.audio_file_path)
 
 
 # clean download_podcasts if it`s too big
@@ -84,9 +79,7 @@ def send_podcast(update, context):
         return
 
     audio_file_path = podcast.audio_file_path
-    # author_name = podcast.author_name
-    # this is crutch !!!!!!!!!!!!!!!!!!!!!!
-    author_name = 'PodcastMinerBot'
+    author_name = podcast.author_name
     title = podcast.title
     duration = podcast.duration
 
