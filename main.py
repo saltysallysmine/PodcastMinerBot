@@ -1,5 +1,5 @@
 import os
-import pafy
+from pytube import YouTube, Stream
 import logging
 from telegram.ext import Updater, MessageHandler, Filters
 from pprint import pprint
@@ -15,37 +15,25 @@ TOKEN = os.environ.get('TELEGRAM_PODCAST_MINER_BOT_TOKEN', None)
 logging.info('get bot token from env')
 
 
-class Podcast:
-    def __init__(self, url: str):
-        self.url = url
-        self.video_id = None
-
-        self.author_name = None
-        self.title = None
-        self.duration = None
+class Podcast(YouTube):
+    def __init__(self, url):
+        super().__init__(url)
 
         self.audio_file_path = None
 
-    def _set_duration(self, duration: str):
-        qw = [int(el) for el in duration.split(':')]
-        self.duration = 3600 * qw[0] + 60 * qw[1] + qw[2]
+    def get_best_audio(self) -> Stream:
+        def comparator(y):
+            return y.type == 'audio' and y.mime_type == 'audio/mp4'
 
-    def make(self):
-        video = pafy.new(self.url)
+        audio_streams_list = list(
+            filter(comparator, self.streams)
+        )
+        return max(audio_streams_list, key=lambda z: int(z.abr[:-4]))
 
-        self.author_name = video.author
-        self.title = video.title
-        self.video_id = video.videoid
-        self._set_duration(video.duration)
-
-        # self.audio_file_path will be like 'download_podcasts/video_id.mp3'
-        self.audio_file_path = 'download_podcasts/'
-        self.audio_file_path += self.video_id
-        self.audio_file_path += '.mp3'
-
-        # download podcast
-        stream = video.getbestaudio()
-        stream.download(filepath=self.audio_file_path)
+    def download(self):
+        audio_stream = self.get_best_audio()
+        audio_stream.download(output_path='download_podcasts', filename=self.video_id)
+        self.audio_file_path = f'download_podcasts/{self.video_id}.mp4'
 
 
 # clean download_podcasts if it`s too big
@@ -74,29 +62,36 @@ def send_podcast(update, context):
         logging.info('пошли копать картошку')
         return
 
-    podcast = Podcast(url)
     try:
-        podcast.make()
+        podcast = Podcast(url)
+        podcast.download()
         logging.info(f'make podcast with id {podcast.video_id}')
     except Exception as e:
         update.message.reply_text(
-            'Something go wrong. Maybe your link or video id is incorrect'
+            'Something go wrong. Maybe your link is incorrect.'
         )
         logging.error(f'can`t make podcast: {e}')
         return
 
     audio_file_path = podcast.audio_file_path
-    author_name = podcast.author_name
+    author_name = podcast.author
     title = podcast.title
-    duration = podcast.duration
+    duration = podcast.length
 
-    # print("author name:", author_name)
+    try:
+        with open(audio_file_path, 'rb') as audio_file:
+            update.message.reply_audio(
+                audio_file, performer=author_name,
+                title=title, duration=duration
+            )
 
-    with open(audio_file_path, 'rb') as audio_file:
-        update.message.reply_audio(audio_file, performer=author_name,
-                                   title=title, duration=duration)
-
-    logging.info(f'send podcast with id {podcast.video_id}')
+        logging.info(f'send podcast with id {podcast.video_id}')
+    except Exception as e:
+        update.message.reply_text(
+            "For some reason, I can't send you audio, sorry."
+        )
+        logging.error(f'can`t make podcast {e}')
+        return
 
     download_podcasts_cleaning()
 
