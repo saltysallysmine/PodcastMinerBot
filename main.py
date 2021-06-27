@@ -51,6 +51,7 @@ class Podcast:
 # clean download_podcasts if it`s too big
 def download_podcasts_cleaning():
     path_base = os.getcwd() + '/download_podcasts'
+
     files_sizes = [os.path.getsize(path_base + '/' + f) for f in os.listdir(path_base)]
     podcasts_size = sum(files_sizes)
     max_podcasts_size = 52428800  # 50MiB
@@ -66,6 +67,12 @@ def download_podcasts_cleaning():
 
 def send_podcast(update, context):
     url = update.message.text
+
+    if url.lower() == 'пойдём копать картошку' or \
+            url.lower() == 'пойдем копать картошку':
+        update.message.reply_text('а погнали!')
+        logging.info('пошли копать картошку')
+        return
 
     podcast = Podcast(url)
     try:
